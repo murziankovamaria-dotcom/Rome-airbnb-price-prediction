@@ -1,0 +1,1213 @@
+---
+title: "Predicting Airbnb Listing Prices in Rome"
+output: html_document
+date: "2026-07-10"
+editor_options: 
+  markdown: 
+    wrap: 72
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(
+  echo    = FALSE,
+  warning = FALSE,
+  message = FALSE
+)
+
+# Data
+airbnb <- read.csv("../data/listings.csv")
+
+# Data handling
+library(tidyverse)     
+
+# Modelling & inference
+library(car)            
+library(lmtest)        
+library(sandwich)       
+library(MASS)           
+library(broom)          
+
+# Tables & figures
+library(knitr)          
+library(kableExtra)     
+library(stargazer)      
+library(modelsummary)   
+library(corrplot)       
+
+# Load datasets once
+data("affairs")
+data("castle")
+```
+
+## 1. Introduction
+
+#### 1.1 Business Scenario
+
+Airbnb aims to help hosts determine an optimal nightly price for their
+properties. Setting a price too high may reduce booking demand, while
+pricing too low can result in lost revenue. To support data-driven
+pricing decisions, this project develops a predictive model that
+estimates the nightly price of Airbnb listings based on property
+characteristics, location, availability, and customer engagement.
+
+#### 1.2 Research Question
+
+> Which listing characteristics have the greatest influence on Airbnb
+> prices in Rome, and how accurately can statistical and machine
+> learning models predict the nightly price?
+
+#### 1.3 Objectives
+
+The objectives of this project are to:
+
+-   inspect and clean the Airbnb dataset;
+
+-   perform exploratory data analysis (EDA);
+
+-   engineer meaningful features;
+
+-   develop and compare regression and machine learning models;
+
+-   evaluate model performance; and
+
+-   provide business recommendations.
+
+## 2. Data Description
+
+```{r}
+library(tidyverse)
+
+airbnb <- read.csv("../data/listings.csv")
+```
+
+#### 2.1 Dataset Description
+
+This study uses the **Inside Airbnb Rome** dataset, which contains
+information on **37,228 Airbnb listings** located across Rome, Italy.
+The dataset includes variables describing listing characteristics,
+geographic location, host information, guest engagement, and pricing.
+
+The response variable for this study is the nightly listing **price
+(€)**, while the remaining variables serve as potential predictors in
+the pricing models developed throughout this project.
+
+#### 2.2 Dataset Overview
+
+The table below summarizes the main characteristics of the dataset.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
+overview <- data.frame(
+  Characteristic = c(
+    "Number of observations",
+    "Number of variables",
+    "Target variable",
+    "Neighbourhoods",
+    "Room types",
+    "Variables with missing values"
+  ),
+  Value = c(
+    nrow(airbnb),
+    ncol(airbnb),
+    "Price (€)",
+    length(unique(airbnb$neighbourhood)),
+    length(unique(airbnb$room_type)),
+    sum(colSums(is.na(airbnb)) > 0)
+  )
+)
+
+kable(
+  overview,
+  align = c("l","c")
+) %>%
+  kable_styling(
+    bootstrap_options = c("striped","hover"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+**Table 1.1 Dataset Overview** The dataset contains a large and diverse
+sample of Airbnb listings in Rome, making it suitable for developing
+predictive models and identifying the main determinants of listing
+prices.
+
+#### 2.3 Variable Dictionary
+
+Table 2 describes the variables included in the dataset.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+variable_dictionary <- data.frame(
+  Variable = c(
+    "id",
+    "name",
+    "host_id",
+    "host_profile_id",
+    "host_name",
+    "neighbourhood_group",
+    "neighbourhood",
+    "latitude",
+    "longitude",
+    "room_type",
+    "price",
+    "minimum_nights",
+    "number_of_reviews",
+    "last_review",
+    "reviews_per_month",
+    "calculated_host_listings_count",
+    "availability_365",
+    "number_of_reviews_ltm",
+    "license"
+  ),
+  Description = c(
+      "Unique listing identifier",
+    "Listing title provided by the host",
+    "Unique host identifier",
+    "Host profile identifier",
+    "Host name",
+    "Broad geographical area (if available)",
+    "Neighbourhood where the listing is located",
+    "Latitude coordinate",
+    "Longitude coordinate",
+    "Type of accommodation (Entire home, Private room, Shared room, etc.)",
+    "Nightly listing price (EUR)",
+    "Minimum number of nights required for booking",
+    "Total number of reviews received",
+    "Date of the most recent review",
+    "Average number of reviews per month",
+    "Number of active listings managed by the host",
+    "Number of days the listing is available during the year",
+    "Number of reviews received in the last 12 months",
+    "Official registration/license number"
+  )
+)
+
+kable(
+  variable_dictionary
+) %>%
+  kable_styling(
+    bootstrap_options = c("striped","hover"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+**Table 2 Variable Dictionary**
+
+#### 2.4 Variables Used in the Analysis
+
+Not all variables contained in the dataset are suitable for predictive
+modeling. Variables such as identifiers and descriptive text do not
+contribute meaningful predictive information and are therefore excluded
+from the analysis.
+
+The variables used for model development are summarized below.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+analysis_variables <- data.frame(
+  Variable = c(
+    "price",
+    "room_type",
+    "neighbourhood",
+    "latitude",
+    "longitude",
+    "minimum_nights",
+    "number_of_reviews",
+    "reviews_per_month",
+    "availability_365",
+    "calculated_host_listings_count"
+  ),
+  Role = c(
+    "Target variable",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+    "Predictor",
+   "Predictor"
+  )
+)
+kable(
+  analysis_variables
+) %>%
+  kable_styling(
+    bootstrap_options = c("striped","hover"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+**Table 3 Variables Used** Variables including **id**, **host_id**,
+**host_profile_id**, **name**, **host_name**, **license**, and
+**last_review** were excluded from the predictive models because serve
+solely as identifiers or descriptive text and do not contribute
+meaningful predictive information.The remaining variables capture
+important characteristics of the listings, their locations, host
+activity, and guest engagement, making them appropriate predictors of
+nightly listing prices.
+
+## 3. Data Cleaning
+
+Before building predictive models, the dataset was inspected for
+potential quality issues that could affect the analysis. The following
+checks were performed: -Missing values -Duplicate listings -Variable
+data types -Invalid or unrealistic prices -Potential outliers
+
+#### 3.1 Missing Values
+
+The dataset was examined for several potential data quality issues
+before analysis. Specifically, missing values, duplicate observations,
+variable data types, invalid prices, and potential outliers were
+investigated to ensure the dataset was suitable for predictive modeling.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(dplyr)
+library(knitr)
+library(kableExtra)
+
+# Create missing values table
+missing_table <- data.frame(
+  Variable = names(airbnb),
+  Missing_Values = colSums(is.na(airbnb)),
+  Missing_Percent = round(colMeans(is.na(airbnb)) * 100, 2)
+)
+
+# Keep only variables with missing values
+missing_table <- missing_table %>%
+  filter(Missing_Values > 0)
+
+# Rename columns for display
+colnames(missing_table) <- c(
+  "Variable",
+  "Missing Values",
+  "Missing (%)"
+)
+
+# Display table
+kable(
+  missing_table,
+  align = c("l", "r", "r")
+) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+**Table 4. Missing Values by Variable"**
+
+The variable neighbourhood_group contains only missing values and
+therefore provides no useful information for the analysis. It will be
+removed from the dataset. The target variable price has approximately
+7.4% missing values. Since price is the response variable, observations
+with missing prices cannot be used to train a predictive model and will
+therefore be excluded. The variable reviews_per_month contains around
+12% missing values. These missing values are likely associated with
+listings that have received no reviews rather than representing data
+collection errors. This variable will be investigated further during
+exploratory data analysis before deciding whether to impute missing
+values or replace them with zero. The remaining variables contain very
+few missing values (\<1%) and are unlikely to substantially affect the
+analysis.
+
+#### 3.3 Invalid Prices
+
+Summary statistics for the target variable are presented in Table 5.
+
+```{r, echo=FALSE, message=FALSE, warning=FALSE}
+library(knitr)
+library(kableExtra)
+
+price_summary <- data.frame(
+  Statistic = c(
+    "Minimum",
+    "1st Quartile",
+    "Median",
+    "Mean",
+    "3rd Quartile",
+    "Maximum"
+  ),
+  `Price (€)` = c(
+    "3",
+    "119",
+    "162",
+    "221.9",
+    "234",
+    "13,729"
+  )
+)
+
+kable(
+  price_summary,
+  align = c("l", "r")
+) %>%
+  kable_styling(
+    bootstrap_options = c("striped", "hover"),
+    full_width = FALSE,
+    position = "center"
+  )
+```
+
+**Table 5 Summary Statistics for Price**
+
+#### 3.4 Initial observations
+
+Overall, the dataset is of high quality and requires only limited
+preprocessing. The primary data quality issues are missing values in
+price and reviews_per_month, together with the completely empty
+neighbourhood_group variable. No duplicate observations or invalid
+prices were identified. These observations will be examined further
+during exploratory data analysis to determine whether they represent
+legitimate luxury properties or influential outliers that require
+additional treatment.
+
+```{r}
+boxplot(
+  airbnb$price,
+  ylab = "Price (€)"
+)
+Q1 <- quantile(airbnb$price, 0.25, na.rm = TRUE)
+
+Q3 <- quantile(airbnb$price, 0.75, na.rm = TRUE)
+
+IQR_value <- IQR(airbnb$price, na.rm = TRUE)
+
+lower_bound <- Q1 - 1.5 * IQR_value
+upper_bound <- Q3 + 1.5 * IQR_value
+
+```
+
+**Figure 1. Distribution of Airbnb Listing Prices**
+
+Airbnb prices are typically right-skewed, with a small number of luxury
+properties creating extreme values. Outliers will be investigated
+further before deciding whether to remove, winsorize, or retain them, as
+they may represent legitimate high-end listings.
+
+Following the data cleaning process, the dataset is suitable for
+exploratory data analysis and predictive modeling. Missing values have
+been assessed, duplicate observations were not identified, invalid
+prices were excluded where necessary, and potential outliers have been
+documented for further investigation.
+
+## 5. Exploratory Data Analysis
+
+Before building predictive models, it is important to understand the
+relationships between the response variable and the explanatory
+variables. This section explores the distribution of Airbnb prices and
+examines how listing characteristics, location, and guest engagement
+relate to nightly prices.
+
+#### 5.1 Distribution of Listing Prices
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+
+library(ggplot2)
+
+ggplot(airbnb, aes(price)) +
+  geom_histogram(
+    bins = 40,
+    fill = "#C71585",
+    color = "white"
+  ) +
+  labs(
+    x = "Nightly Price (€)",
+    y = "Number of Listings"
+  ) +
+  theme_minimal()
+```
+
+**Figure 2.Distribution of Airbnb Listing Prices**
+
+The histogram shows that Airbnb listing prices in Rome are highly
+right-skewed. Most listings are concentrated at relatively low nightly
+prices (below approximately €300), while a small number of luxury
+properties have exceptionally high prices. These extreme values increase
+the mean price and suggest the presence of outliers. Consequently, a log
+transformation of the target variable may improve the performance of
+predictive models.
+
+#### 5.2 Room Type
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+ggplot(airbnb,
+       aes(room_type, price, fill = room_type)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  labs(
+    title = "Listing Price by Room Type",
+    x = "Room Type",
+    y = "Nightly Price (€)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+**Figure 3.Listing Price by Room Type**
+
+Room type appears to be one of the strongest determinants of Airbnb
+prices. Entire homes and apartments generally command the highest
+nightly prices and exhibit the greatest price variability. Private rooms
+are typically less expensive, while shared rooms represent the
+lowest-priced accommodation type. The large spread within each category
+suggests that additional factors, such as location and property
+characteristics, also influence listing prices.
+
+#### 5.3 Price by Neighbourhood
+
+```{r, fig.align='center', fig.width=8, fig.height=6}
+
+library(dplyr)
+
+avg_price <- airbnb %>%
+  group_by(neighbourhood) %>%
+  summarise(
+    Average_Price = mean(price, na.rm = TRUE)
+  ) %>%
+  arrange(desc(Average_Price))
+
+ggplot(avg_price,
+       aes(reorder(neighbourhood,
+                   Average_Price),
+           Average_Price)) +
+  geom_col(fill = "#C71585") +
+  coord_flip() +
+  labs(
+    x = "",
+    y = "Average Price (€)"
+  ) +
+  theme_minimal()
+```
+
+**Figure 4.Average Airbnb Price by Neighbourhood**
+
+Average listing prices differ considerably across Rome’s neighbourhoods.
+The historic city centre (I Centro Storico) has the highest average
+nightly price, reflecting its popularity among tourists and proximity to
+major attractions. In contrast, peripheral neighbourhoods exhibit
+substantially lower average prices. These findings indicate that
+neighbourhood is likely to be an important predictor in the pricing
+model.
+
+#### 5.4 Reviews and Listing Price
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+
+ggplot(airbnb,
+       aes(number_of_reviews, price)) +
+  geom_point(alpha = 0.2,
+             color = "#C71585") +
+  labs(
+    title = "Reviews and Listing Price",
+    x = "Number of Reviews",
+    y = "Nightly Price (€)"
+  ) +
+  theme_minimal()
+```
+
+**Figure 5.Reviews and Listing Price**
+
+The scatterplot suggests that the relationship between the number of
+reviews and listing price is relatively weak. Most highly reviewed
+listings are concentrated within lower and medium price ranges, while
+expensive listings generally receive fewer reviews. This pattern may
+reflect higher booking frequencies for more affordable accommodations.
+Although review count alone is not a strong predictor of price, it may
+still contribute useful information when combined with other variables.
+
+#### 5.5 Availability and Listing Price
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+
+ggplot(airbnb,
+       aes(availability_365,
+           price)) +
+  geom_point(alpha = 0.2,
+             color = "#C71585") +
+  labs(
+    x = "Availability (Days per Year)",
+    y = "Nightly Price (€)"
+  ) +
+  theme_minimal()
+```
+
+**Figure 6.Availability and Listing Price**
+
+No clear linear relationship is observed between annual availability and
+nightly price. Listings with both high and low availability span a wide
+range of prices. This suggests that availability alone is unlikely to
+explain price differences, although it may capture aspects of host
+behaviour or seasonal demand when considered alongside other predictors.
+
+#### 5.6 Minimum Nights and Listing Price
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+
+ggplot(airbnb,
+       aes(minimum_nights,
+           price)) +
+  geom_point(alpha = 0.2,
+             color = "#C71585") +
+  labs(
+    x = "Minimum Nights",
+    y = "Nightly Price (€)"
+  ) +
+  theme_minimal()
+```
+
+**Figure 7.Minimum Stay Requirement and Listing Price**
+
+Most Airbnb listings require only a small minimum stay, typically fewer
+than ten nights. Listings with very high minimum-night requirements are
+relatively rare and do not appear to follow a consistent pricing
+pattern. Overall, the relationship between minimum stay requirements and
+listing price appears weak, suggesting that this variable alone has
+limited explanatory power.
+
+#### 5.7 Correlation Analysis
+
+Correlation analysis provides an overview of the relationships among the
+numerical variables in the dataset. Strong correlations may indicate
+variables that contain similar information, while weak correlations
+suggest that each predictor contributes unique information.
+Understanding these relationships also helps identify potential
+multicollinearity before building predictive models.
+
+```{r, fig.align='center', fig.width=8, fig.height=6, message=FALSE, warning=FALSE}
+library(dplyr)
+library(ggplot2)
+
+# Select only numeric variables
+numeric_data <- airbnb %>%
+  dplyr::select(
+    price,
+    latitude,
+    longitude,
+    minimum_nights,
+    number_of_reviews,
+    reviews_per_month,
+    calculated_host_listings_count,
+    availability_365,
+    number_of_reviews_ltm
+  )
+
+# Compute correlation matrix
+cor_matrix <- cor(numeric_data, use = "complete.obs")
+
+colnames(cor_matrix) <- c(
+  "Price",
+  "Latitude",
+  "Longitude",
+  "Min Nights",
+  "Reviews",
+  "Reviews/Month",
+  "Host Listings",
+  "Availability",
+  "Reviews (LTM)"
+)
+
+rownames(cor_matrix) <- c(
+  "Price",
+  "Latitude",
+  "Longitude",
+  "Min Nights",
+  "Reviews",
+  "Reviews/Month",
+  "Host Listings",
+  "Availability",
+  "Reviews (LTM)"
+)
+# Convert matrix to long format
+cor_df <- as.data.frame(as.table(cor_matrix))
+
+# Plot heatmap
+ggplot(cor_df, aes(Var1, Var2, fill = Freq)) +
+  geom_tile(color = "white") +
+  geom_text(aes(label = round(Freq, 2)), size = 3) +
+  scale_fill_gradient2(
+    low = "#FFFFFF",
+    mid = "#FCE4EC",
+    high = "#C2185B",
+    midpoint = 0,
+    limits = c(-1, 1)
+  ) +
+  labs(
+    x = "",
+    y = "",
+    fill = "Correlation"
+  ) +
+  theme_minimal() +
+  theme(
+    axis.text.x = element_text(angle = 45, hjust = 1)
+  )
+```
+
+**Figure 8.Correlation Matrix of Numerical Variables**
+
+The correlation matrix indicates that most numerical variables exhibit
+weak pairwise correlations, suggesting that multicollinearity is
+unlikely to be a major concern in the predictive models. As expected,
+the strongest positive correlation is observed between reviews_per_month
+and number_of_reviews_ltm (r = 0.84), since both variables measure
+recent guest activity. A moderate positive correlation is also present
+between number_of_reviews and number_of_reviews_ltm (r = 0.61), and
+between number_of_reviews and reviews_per_month (r = 0.54). In contrast,
+the target variable price exhibits only very weak correlations with the
+numerical predictors, indicating that listing price is likely influenced
+by a combination of numerical and categorical characteristics rather
+than by any single numerical variable. These findings support the use of
+multivariate regression and machine learning models to capture the
+complex relationships underlying Airbnb pricing.
+
+Although the numerical predictors display relatively weak correlations
+with price, this does not imply that they lack predictive value. Several
+important explanatory variables in this dataset, including room type and
+neighbourhood, are categorical and therefore are not represented in the
+correlation matrix. Moreover, the observed relationships may be
+non-linear, making machine learning approaches particularly suitable for
+this prediction task.
+
+#### 5.8 Key Findings
+
+The exploratory data analysis revealed several important characteristics
+of the Airbnb dataset. First, listing prices are highly right-skewed,
+with a relatively small number of luxury properties creating extreme
+values. Applying a logarithmic transformation substantially reduced this
+skewness, producing a distribution that is more appropriate for
+predictive modeling.
+
+Among the explanatory variables, room type and neighbourhood appear to
+have the strongest influence on listing prices. Entire homes and
+apartments generally command the highest nightly prices, while shared
+rooms are consistently the least expensive. Listings located in Rome’s
+historic centre also tend to achieve higher average prices than those in
+more peripheral neighbourhoods.
+
+The numerical variables, including review activity, availability, and
+minimum stay requirements, exhibit relatively weak individual
+relationships with price. Likewise, the correlation analysis indicates
+limited multicollinearity among the numerical predictors, although
+review-related variables are naturally correlated with one another.
+These findings suggest that Airbnb pricing is influenced by the combined
+effects of multiple listing characteristics rather than by any single
+variable.
+
+Overall, the exploratory analysis indicates that the dataset is suitable
+for predictive modeling and provides a strong foundation for the feature
+engineering and regression analyses that follow.
+
+## 6. Feature Engineering
+
+Before building predictive models, several new variables were created
+from the original dataset. Feature engineering can improve predictive
+performance by transforming raw information into variables that better
+capture important characteristics of Airbnb listings.
+
+#### 6.1 Log Transformation of Price
+
+The histogram presented earlier showed that listing prices are highly
+right-skewed, with a small number of luxury properties generating
+extreme values. Such skewness may violate the assumptions of linear
+regression and reduce predictive accuracy. A common solution is to apply
+a logarithmic transformation to the target variable.
+
+```{r}
+airbnb$log_price <- log(airbnb$price)
+```
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+ggplot(airbnb, aes(log_price)) +
+  geom_histogram(
+    bins = 40,
+    fill = "#C2185B",
+    color = "white"
+  ) +
+  labs(
+    x = "Log(Price)",
+    y = "Number of Listings"
+  ) +
+  theme_minimal()
+```
+
+**Figure 9. Distribution of Log-Transformed Listing Prices**
+
+The logarithmic transformation substantially reduces the positive
+skewness observed in the original price distribution. After
+transformation, the distribution becomes considerably more symmetric and
+closely resembles a normal distribution, while the influence of extreme
+luxury listings is reduced. This transformation is expected to improve
+the performance of linear regression models by better satisfying the
+assumptions of normality and constant variance.
+
+```{r, fig.align='center', fig.width=7, fig.height=5}
+ggplot(airbnb,
+       aes(room_type, log_price, fill = room_type)) +
+  geom_boxplot(outlier.alpha = 0.2) +
+  labs(
+    x = "Room Type",
+    y = "Log(Price)"
+  ) +
+  theme_minimal() +
+  theme(legend.position = "none")
+```
+
+**Figure 10. Log-Transformed Listing Price by Room Type**
+
+The differences in listing prices across room types remain evident after
+applying the logarithmic transformation. Entire homes and apartments
+continue to exhibit the highest median prices, followed by hotel rooms
+and private rooms, while shared rooms remain the least expensive
+accommodation type. Compared with the original boxplot, the variability
+within each category is noticeably reduced, indicating that the
+logarithmic transformation successfully minimizes the influence of
+extreme observations while preserving the underlying pricing patterns.
+
+#### 6.2 High Availability
+
+Listings available for more than half of the year may reflect different
+pricing strategies than those with limited availability.
+
+A binary variable named `high_availability` was created to identify
+listings available for more than 180 days per year. This feature is
+intended to capture differences in host pricing strategies and listing
+availability and will be included as a predictor in the subsequent
+models.
+
+```{r}
+
+airbnb$high_availability <- ifelse(
+
+  airbnb$availability_365 > 180,
+
+  1,
+
+  0
+
+)
+```
+
+## 7. Regression Model
+
+#### 7.1 Model Specification
+
+The objective of the regression analysis is to identify the listing
+characteristics that influence Airbnb prices in Rome and to evaluate the
+predictive performance of multiple linear regression. The dependent
+variable is log_price, which represents the natural logarithm of the
+nightly listing price. The original price variable exhibited substantial
+positive skewness due to a small number of luxury listings. Applying a
+logarithmic transformation reduces the influence of these extreme
+observations and produces a distribution that better satisfies the
+assumptions of linear regression. The explanatory variables were
+selected based on economic reasoning and the exploratory data analysis
+conducted in the previous sections. confirm the OLS findings.
+
+**Main Explanatory Variables:**
+
+Room Type (room_type) - Room type is expected to be one of the strongest
+determinants of Airbnb prices. Entire homes and apartments generally
+provide greater privacy and larger living spaces than private or shared
+rooms and therefore command higher nightly rates.
+
+Neighbourhood (neighbourhood) - Location is a fundamental determinant of
+housing prices. Listings located in central tourist areas are expected
+to be more expensive because of greater accessibility and higher demand.
+
+**Control Variables**
+
+Minimum stay requirements(minimum_nights) may reflect different pricing
+strategies adopted by hosts. Listings requiring longer stays may either
+charge higher prices because they target longer-term guests or lower
+prices to encourage extended bookings. Therefore, the expected
+relationship is ambiguous.
+
+Review count(number_of_reviews) measures guest engagement and
+popularity. Highly reviewed properties may attract more demand and
+therefore charge higher prices. However, older listings also tend to
+accumulate more reviews over time, making the expected relationship
+uncertain.
+
+This variable captures recent booking activity(reviews_per_month).
+Listings receiving reviews more frequently may reflect higher demand and
+stronger market performance, suggesting a positive association with
+price.
+
+Availability (availability_365) measures the number of days a listing is
+available throughout the year. Properties with limited availability may
+reflect stronger demand, while highly available properties may indicate
+lower occupancy rates. Consequently, the expected relationship is
+ambiguous.
+
+Hosts managing multiple properties may adopt professional pricing
+strategies that differ from individual
+hosts(calculated_host_listings_count) . The direction of this
+relationship is determined empirically.
+
+| Variable          | Expected Effect on Price            |
+|-------------------|-------------------------------------|
+| Room Type         | Positive (+)                        |
+| Neighbourhood     | Positive/Negative (depends on area) |
+| Minimum Nights    | Ambiguous (+/-)                     |
+| Number of Reviews | Positive (+)                        |
+| Reviews per Month | Positive (+)                        |
+| Availability      | Ambiguous (+/-)                     |
+| Host Listings     | Ambiguous (+/-)                     |
+
+**Table 6 Expected Coefficient Signs**
+
+**Baseline Model**
+
+The baseline regression model examines the relationship between room type and the logarithm of the nightly Airbnb listing price:
+
+$$
+\log(\text{Price}_i)=
+\beta_0+
+\beta_1\text{RoomType}_i+
+u_i
+$$
+
+where u_i represents unobserved factors affecting the listing price.
+
+**Extended Model**
+
+To account for additional listing characteristics and guest engagement, the following specification is estimated:
+
+$$
+\log(\text{Price}_i)=
+\beta_0+
+\beta_1\text{RoomType}_i+
+\beta_2\text{MinimumNights}_i+
+\beta_3\text{Reviews}_i+
+\beta_4\text{ReviewsPerMonth}_i+
+\beta_5\text{Availability}_i+
+u_i
+$$
+This specification evaluates whether booking characteristics and customer engagement improve the explanation of Airbnb listing prices beyond accommodation type alone.
+
+**Full Model**
+
+The final specification additionally controls for neighbourhood and host characteristics:
+$$
+\log(\text{Price}_i)=
+\beta_0+
+\beta_1\text{RoomType}_i+
+\beta_2\text{Neighbourhood}_i+
+\beta_3\text{MinimumNights}_i+
+\beta_4\text{Reviews}_i+
+\beta_5\text{ReviewsPerMonth}_i+
+\beta_6\text{Availability}_i+
+\beta_7\text{HostListings}_i+
+u_i
+$$
+
+This model provides the most comprehensive specification by incorporating property characteristics, geographic location, booking requirements, guest engagement, and host activity. Comparing the three models allows us to evaluate how the inclusion of additional predictors improves the explanatory power of the regression model.
+
+
+### 7.2. Regression Analysis
+
+To examine the factors influencing Airbnb listing prices in Rome, a
+series of Ordinary Least Squares (OLS) regression models are estimated.
+The dependent variable in all specifications is the log-transformed
+nightly listing price (log_price), while listing characteristics,
+location, availability, and guest engagement serve as the primary
+explanatory variables.
+
+The analysis begins with a baseline model that includes only room type
+as the main predictor. Additional specifications progressively
+incorporate neighbourhood, booking characteristics, host information,
+and guest engagement variables to evaluate whether the explanatory power
+of the model improves as more relevant predictors are included. This
+stepwise approach allows the contribution of each group of variables to
+be assessed while examining the robustness of the estimated
+relationships..
+
+```{r}
+
+# Model 1: Baseline model
+model1 <- lm(
+  log_price ~ room_type,
+  data = airbnb
+)
+
+# Model 2: Add booking and engagement variables
+model2 <- lm(
+  log_price ~
+    room_type +
+    minimum_nights +
+    number_of_reviews +
+    reviews_per_month +
+    availability_365,
+  data = airbnb
+)
+# Model 3: Full model
+model3 <- lm(
+  log_price ~
+    room_type +
+    neighbourhood +
+    minimum_nights +
+    number_of_reviews +
+    reviews_per_month +
+    availability_365 +
+    calculated_host_listings_count,
+  data = airbnb
+)
+```
+
+```{r regression-table,results='asis'}
+library(stargazer)
+
+stargazer(
+
+  model1,
+
+  model2,
+
+  model3,
+
+  type = "html",
+
+  title = "Comparison of Multiple Linear Regression Models",
+
+  column.labels = c("Model 1", "Model 2", "Model 3"),
+
+  dep.var.labels = "Log Listing Price",
+
+  digits = 3,
+
+  out.header = FALSE
+
+)
+```
+
+**Table 7 Comparison of OLS Regression Models**
+
+**M1 = Baseline model, M2 = Extended model, M3 = Full model**
+
+Table 7 presents the results of three Ordinary Least Squares (OLS) regression models estimating the determinants of Airbnb listing prices in Rome. The dependent variable in all specifications is the logarithm of the nightly listing price.
+
+Model 1 includes only room type and serves as the baseline specification. The results indicate that accommodation type is a strong predictor of listing prices. Relative to entire homes and apartments (the reference category), hotel rooms, private rooms, and shared rooms are all associated with significantly lower prices. Shared rooms exhibit the largest negative coefficient, indicating that they are the least expensive accommodation type.
+
+Model 2 extends the analysis by incorporating booking characteristics and guest engagement variables. Minimum nights and reviews per month are negatively associated with listing prices, suggesting that listings requiring longer minimum stays or receiving reviews more frequently tend to charge slightly lower prices after controlling for room type. In contrast, availability throughout the year has a small but positive relationship with price, while the total number of reviews is not statistically significant.
+
+Model 3 provides the most comprehensive specification by additionally controlling for neighbourhood and host characteristics. The inclusion of neighbourhood substantially improves the explanatory power of the model, with the adjusted R^2 increasing from 0.202 in Model 2 to 0.354. This finding highlights the importance of location in determining Airbnb prices. Nearly all neighbourhood coefficients are negative relative to the reference neighbourhood (Centro Storico), indicating that listings outside the historic centre generally command lower nightly prices.
+
+The coefficient for minimum nights remains negative and statistically significant across both extended specifications, while availability continues to exhibit a small positive association with price. Reviews per month remains negatively associated with price, whereas the total number of reviews becomes weakly negative but remains economically small. Finally, the number of listings managed by a host has a positive and statistically significant coefficient, suggesting that professional hosts operating multiple properties tend to charge slightly higher prices.
+
+Overall, the regression results demonstrate that room type and neighbourhood are the primary determinants of Airbnb prices in Rome, while booking characteristics and host information provide additional explanatory power. The progressive increase in the adjusted R^2 from 0.124 in the baseline model to 0.354 in the full specification indicates that the inclusion of location and host characteristics substantially improves model performance. Although the regression explains approximately one-third of the variation in listing prices, a considerable proportion of price differences remains unexplained, suggesting that additional factors—such as property size, amenities, interior quality, and seasonal demand—may also influence Airbnb pricing but are not captured in the available dataset.
+
+```{r residual-diagnostics,fig.width=8, fig.height=8}
+# Show the four standard regression diagnostic plots for Model 3 in a 2x2 grid
+par(mfrow = c(2, 2))   # arrange the next plots in 2 rows x 2 columns
+plot(model3)           # base R automatically produces the 4 lm diagnostic plots
+```
+
+**Figure 11 Residual Diagnostics**
+
+Figure 11 presents the standard diagnostic plots for the final regression model (Model 3). These plots assess whether the assumptions of linear regression are reasonably satisfied.
+
+The Residuals vs Fitted plot shows that the residuals are generally centered around zero, indicating that the linear specification is appropriate. However, the spread of the residuals increases slightly for larger fitted values, suggesting the presence of heteroskedasticity, where the variance of the errors is not constant.
+
+The Normal Q-Q plot indicates that the residuals deviate from the reference line in the upper tail. This suggests that the residuals are not perfectly normally distributed, primarily because the dataset contains a number of very expensive Airbnb listings that create extreme observations. Such departures from normality are common in pricing data.
+
+The Scale-Location plot also suggests mild heteroskedasticity. The red smoothing line is not perfectly horizontal, indicating that the variability of the residuals changes across the range of fitted values. This pattern is consistent with the increasing dispersion observed in the Residuals vs Fitted plot.
+
+Finally, the Residuals vs Leverage plot identifies several observations with relatively high leverage. However, none appear to exceed Cook’s distance thresholds by a substantial margin, indicating that no single observation has an excessive influence on the estimated regression coefficients.
+
+Overall, the diagnostic plots indicate that the model provides a reasonable fit to the data, although the assumptions of constant error variance and normality are only partially satisfied. These violations are expected when modelling Airbnb prices because listing prices are naturally right-skewed and include a small number of luxury properties. The earlier logarithmic transformation substantially improved the distribution of the response variable and reduced the influence of extreme values, making the regression results more reliable.
+
+## 8. Machine Learning
+
+While multiple linear regression provides an interpretable baseline model, machine learning algorithms may achieve higher predictive accuracy by capturing complex nonlinear relationships and interactions among the predictors. This section compares several predictive models to evaluate their ability to estimate Airbnb listing prices in Rome.
+
+The cleaned dataset is randomly divided into a training set (80%) and a testing set (20%). The models are fitted using the training data, while the testing data are used to evaluate out-of-sample prediction performance. This approach helps assess how well each model generalizes to unseen observations and reduces the risk of overfitting.
+
+Three predictive models are considered:
+
+* Multiple Linear Regression
+* Regression Tree
+* Random Forest
+
+The performance of each model is compared using the Root Mean Squared Error (RMSE), where lower values indicate better predictive accuracy.
+
+```{r}
+# Keep only the variables used in the models
+airbnb_model <- airbnb[, c(
+  "log_price",
+  "room_type",
+  "neighbourhood",
+  "minimum_nights",
+  "number_of_reviews",
+  "reviews_per_month",
+  "availability_365",
+  "calculated_host_listings_count"
+)]
+
+# Remove rows with missing values
+airbnb_model <- na.omit(airbnb_model)
+
+# Train-test split
+set.seed(123)
+
+train_index <- sample(
+  1:nrow(airbnb_model),
+  0.8 * nrow(airbnb_model)
+)
+
+train <- airbnb_model[train_index, ]
+test  <- airbnb_model[-train_index, ]
+```
+
+```{r}
+lm_model <- lm(
+  log_price ~ room_type +
+    neighbourhood +
+    minimum_nights +
+    number_of_reviews +
+    reviews_per_month +
+    availability_365 +
+    calculated_host_listings_count,
+  data = train
+)
+
+lm_pred <- predict(lm_model, newdata = test)
+
+lm_rmse <- sqrt(mean((test$log_price - lm_pred)^2, na.rm = TRUE))
+```
+
+```{r}
+library(rpart)
+
+tree_model <- rpart(
+  log_price ~ room_type +
+    neighbourhood +
+    minimum_nights +
+    number_of_reviews +
+    reviews_per_month +
+    availability_365 +
+    calculated_host_listings_count,
+  data = train,
+  method = "anova"
+)
+
+tree_pred <- predict(tree_model, newdata = test)
+
+tree_rmse <- sqrt(mean((test$log_price - tree_pred)^2, na.rm = TRUE))
+```
+
+
+```{r}
+library(randomForest)
+
+set.seed(123)
+
+rf_model <- randomForest(
+  log_price ~ room_type +
+    neighbourhood +
+    minimum_nights +
+    number_of_reviews +
+    reviews_per_month +
+    availability_365 +
+    calculated_host_listings_count,
+  data = train,
+  ntree = 300
+)
+
+rf_pred <- predict(rf_model, newdata = test)
+
+rf_rmse <- sqrt(mean((test$log_price - rf_pred)^2, na.rm = TRUE))
+```
+
+```{r}
+results <- data.frame(
+  Model = c(
+    "Multiple Linear Regression",
+    "Regression Tree",
+    "Random Forest"
+  ),
+  RMSE = c(
+    lm_rmse,
+    tree_rmse,
+    rf_rmse
+  )
+)
+
+knitr::kable(
+  results,
+  digits = 3
+)
+```
+**Table 12.Comparison of Prediction Accuracy **
+
+Table 12 compares the predictive performance of the three models using the Root Mean Squared Error (RMSE), where lower values indicate more accurate predictions.
+
+The Multiple Linear Regression model achieved an RMSE of 0.481, providing a strong and interpretable baseline for predicting Airbnb listing prices. Although the regression model captures the main linear relationships between the explanatory variables and listing prices, its predictive accuracy is limited by its inability to model complex nonlinear patterns.
+
+The Regression Tree produced an RMSE of 0.502, which is slightly higher than that of the linear regression model. This indicates that the regression tree provides less accurate predictions for this dataset. While regression trees are capable of modelling nonlinear relationships, they are also prone to producing simpler decision rules that may not fully capture the complexity of Airbnb pricing.
+
+The Random Forest model achieved the lowest RMSE (0.465) among all three models, making it the best-performing model in this analysis. By combining the predictions of many decision trees, the random forest is able to model complex interactions and nonlinear relationships while reducing overfitting. The improvement in predictive accuracy suggests that Airbnb listing prices are influenced by relationships that cannot be fully captured by a traditional linear regression model.
+
+Overall, the comparison demonstrates that machine learning techniques can improve the prediction of Airbnb listing prices. Although the multiple linear regression model remains valuable because of its interpretability, the random forest provides the highest predictive accuracy and is therefore the preferred model for forecasting Airbnb prices in Rome.
+
+
+
+```{r, fig.align='center', fig.width=8, fig.height=6}
+library(randomForest)
+varImpPlot(
+  rf_model,
+  main = "Random Forest Feature Importance",
+  col = "#C2185B"
+)
+```
+
+**Figure 12. Variable Importance from the Random Forest Model**
+
+The variable importance plot identifies the predictors that contribute most to the Random Forest model. Among the variables included in the analysis, neighbourhood is the most important predictor of Airbnb listing prices, followed by room type. This indicates that location and accommodation type are the primary determinants of pricing in the Rome Airbnb market.
+
+Review activity, represented by reviews per month and number of reviews, also contributes to the prediction, although to a lesser extent. Variables related to booking characteristics, such as availability, minimum nights, and the number of listings managed by the host, have relatively smaller effects on predictive performance.
+
+These results are consistent with the findings from the exploratory data analysis, where central neighbourhoods and entire homes were associated with higher listing prices.
+
+
+## 9. Business Recommendations
+
+The findings of this analysis provide several practical recommendations for Airbnb hosts operating in Rome. By understanding the factors that influence listing prices, hosts can make more informed pricing and marketing decisions to improve both occupancy rates and revenue.
+
+**Differentiate pricing by room type** : The regression analysis shows that room type is one of the strongest determinants of listing price. Entire homes and apartments consistently command higher nightly rates than private or shared rooms. Hosts should therefore benchmark their prices against listings offering the same type of accommodation rather than comparing themselves to the entire market.
+
+**Consider location when setting prices ** : The neighbourhood variable was among the most important predictors in both the regression and Random Forest models. Properties located in more desirable or central areas are able to charge substantial price premiums. Hosts should regularly compare their prices with similar listings within their own neighbourhood instead of applying a uniform pricing strategy across different locations.
+
+**Encourage guest engagement and reviews** : Listings with greater guest activity, measured by the number of reviews and reviews per month, tend to achieve higher prices. Maintaining high service quality and encouraging satisfied guests to leave reviews may improve both listing visibility and pricing potential over time.
+
+**Avoid unnecessarily restrictive booking policies ** : The analysis suggests that higher minimum-night requirements are associated with slightly lower listing prices. Setting excessively long minimum stays may reduce demand by limiting booking flexibility. Hosts should carefully balance occupancy goals with pricing strategies.
+
+**Use data-driven pricing strategies ** : The superior performance of the Random Forest model demonstrates that Airbnb prices depend on complex interactions between multiple listing characteristics rather than on a single factor. Hosts may therefore benefit from dynamic pricing tools that simultaneously consider location, accommodation type, availability, and guest engagement when determining nightly prices.
+
+
+## 10. Conclusion
+
+This study is subject to several limitations. The analysis uses cross-sectional data for Airbnb listings in Rome and therefore does not capture seasonal price fluctuations or changes over time. Additionally, some potentially important determinants of price, such as property amenities, photographs, and textual listing descriptions, were not included in the dataset. Future research could incorporate these variables and explore more advanced machine learning methods to further improve predictive accuracy.
+
+This project examined the factors influencing Airbnb listing prices in Rome using a combination of exploratory data analysis, multiple linear regression, and machine learning techniques. The analysis demonstrated that Airbnb pricing is driven by several property characteristics, with location and room type emerging as the most important determinants of nightly prices.
+
+The exploratory data analysis revealed that listing prices are highly right-skewed, motivating the use of a logarithmic transformation of the target variable. The transformed distribution better satisfied the assumptions of linear regression and improved model stability. Correlation analysis showed that no single numerical variable exhibited a strong linear relationship with price, suggesting that pricing depends on the combined effects of multiple listing characteristics.
+
+Three predictive models were compared: Multiple Linear Regression, Regression Tree, and Random Forest. Among these, the Random Forest model achieved the best predictive performance, producing the lowest Root Mean Squared Error (RMSE = 0.465). This indicates that machine learning methods are better able to capture the complex nonlinear relationships that characterize Airbnb pricing. Nevertheless, the multiple linear regression model remained valuable because of its straightforward interpretation and its ability to quantify the effect of individual predictors.
+
+The analysis also identified several practical insights for Airbnb hosts. Entire homes command higher prices than private or shared rooms, listings in central neighbourhoods benefit from significant price premiums, and guest engagement variables such as review activity contribute positively to pricing. These findings suggest that successful pricing strategies should account for both property characteristics and market conditions rather than relying on simple fixed pricing rules.
+
+Overall, this project demonstrates a complete data analytics workflow, including data cleaning, exploratory analysis, feature engineering, statistical modeling, machine learning, model evaluation, and the translation of analytical results into actionable business recommendations. The findings highlight how data-driven approaches can support more accurate pricing decisions and improve revenue optimization in the short-term rental market.
+
+
+
+
+
+
+
+#Bibliography 
+
+https://insideairbnb.com/it/get-the-data/?utm_source=chatgpt.com
