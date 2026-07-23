@@ -115,7 +115,7 @@ This demonstrates the effectiveness of ensemble learning techniques for real est
 
 ⸻
 
-💡 Key Insights
+Key Insights
 
 Some important findings include:
 
@@ -127,7 +127,7 @@ Some important findings include:
 
 ⸻
 
-🛠 Technologies Used
+Technologies Used
 
 Programming
 
@@ -244,7 +244,7 @@ Run the R Markdown file to reproduce the complete analysis.
 
 ⸻
 
-🎓 Skills Demonstrated
+Skills Demonstrated
 
 * Data Cleaning
 * Exploratory Data Analysis (EDA)
