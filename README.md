@@ -175,33 +175,48 @@ rome-airbnb-price-prediction/
 ⸻
 
 Project Preview
+
+
 ### Average Airbnb Price by Neighborhood
+
 Average nightly Airbnb prices vary considerably across Rome's neighborhoods. Historic and central districts command the highest prices, reflecting stronger tourist demand and premium locations.
 
 <p align="center">
-  <img src="images/neighborhood_prices.png" width="850">
+  <img src="pricing_files/figure-html/neighborhood_prices.png" width="850">
 </p>
+
 
 ### Distribution of Log-Transformed Prices
 
 The original price distribution is highly right-skewed. Applying a logarithmic transformation produces a more symmetric distribution, making the data better suited for regression modeling.
 
 <p align="center">
-  <img src="images/log_price_distribution.png" width="700">
+  <img src="pricing_files/figure-html/log_price_distribution.png" width="700">
 </p>
 
-### Room Type vs Nightly Price
-Entire homes consistently achieve the highest nightly prices, while shared rooms represent the lowest-priced segment. The boxplots also highlight substantial variation within each room type.
+
+### Room Type vs Log-Transformed Nightly Price
+
+Entire homes consistently achieve the highest nightly prices, while shared rooms represent the lowest-priced segment. Displaying log-transformed prices reduces the influence of extreme outliers and highlights differences between room types more clearly.
+
 <p align="center">
-  <img src="images/room_type_prices.png" width="850">
+  <img src="pricing_files/figure-html/room_type_log_prices.png" width="850">
 </p>
-
 
 ### Random Forest Feature Importance
-The Random Forest model ranks predictors according to their contribution to estimating Airbnb listing prices. The results indicate that neighbourhood and room type are the strongest drivers of nightly prices, while booking characteristics and host activity provide additional predictive information.
+
+The Random Forest model ranks predictors according to their contribution to predicting Airbnb listing prices. Neighbourhood and room type emerge as the most influential features, followed by booking activity and host characteristics.
 
 <p align="center">
-  <img src="images/feature_importance.png" width="700">
+  <img src="pricing_files/figure-html/feature_importance.png" width="700">
+</p>
+
+### Residual Diagnostics
+
+Residual diagnostic plots were used to evaluate the regression model assumptions and identify potential outliers, influential observations, and patterns in prediction errors.
+
+<p align="center">
+  <img src="pricing_files/figure-html/residual-diagnostics.png" width="850">
 </p>
 
 ⸻
