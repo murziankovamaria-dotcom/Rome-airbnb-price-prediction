@@ -1,10 +1,9 @@
-Rome Airbnb Price Prediction
+# Rome Airbnb Price Prediction
 
 End-to-end Data Science project using R and Machine Learning to predict Airbnb listing prices in Rome and uncover the key factors influencing short-term rental pricing.
 
-⸻
 
-Project Overview
+# Project Overview
 
 Pricing an Airbnb property is a complex decision influenced by location, property characteristics, host information, guest demand, and market conditions.
 
@@ -12,9 +11,8 @@ The objective of this project is to analyze Airbnb listings in Rome, Italy, iden
 
 The project follows a complete data science workflow, from data preprocessing and exploratory analysis to model development and business recommendations.
 
-⸻
 
-Business Problem
+# Business Problem
 
 For Airbnb hosts, setting the wrong nightly price can lead to:
 
@@ -25,9 +23,8 @@ For Airbnb hosts, setting the wrong nightly price can lead to:
 
 By understanding which variables drive pricing, hosts can make more informed pricing decisions while improving profitability.
 
-⸻
 
-Dataset
+# Dataset
 
 The project uses a real-world Airbnb dataset containing information about listings in Rome.
 
@@ -45,9 +42,8 @@ The dataset includes variables such as:
 * Room type
 * Amenities
 
-⸻
 
-Project Workflow
+# Project Workflow
 
 Raw Airbnb Data
         │
@@ -72,9 +68,8 @@ Model Evaluation
         ▼
 Business Insights
 
-⸻
 
-Exploratory Data Analysis
+# Exploratory Data Analysis
 
 The analysis investigates:
 
@@ -86,9 +81,8 @@ The analysis investigates:
 * Property type comparisons
 * Relationships between amenities and prices
 
-⸻
 
-Machine Learning Models
+# Machine Learning Models
 
 Several regression models were trained and compared.
 
@@ -105,17 +99,15 @@ Models were evaluated using:
 * MAE
 * R² Score
 
-⸻
 
-Results
+# Results
 
 The comparison showed that Random Forest achieved the strongest predictive performance, outperforming traditional linear regression models by capturing more complex relationships between Airbnb listing characteristics and pricing.
 
 This demonstrates the effectiveness of ensemble learning techniques for real estate price prediction problems.
 
-⸻
 
-Key Insights
+# Key Insights
 
 Some important findings include:
 
@@ -125,17 +117,15 @@ Some important findings include:
 * Listing characteristics and amenities substantially influence pricing.
 * Ensemble machine learning models outperform simple linear approaches.
 
-⸻
 
-Technologies Used
 
-Programming
+# Technologies Used
 
+### Programming
 * R
 * R Markdown
 
-Libraries
-
+### Libraries
 * tidyverse
 * dplyr
 * ggplot2
@@ -144,8 +134,7 @@ Libraries
 * glmnet
 * rpart
 
-Techniques
-
+### Techniques
 * Data Cleaning
 * Feature Engineering
 * Exploratory Data Analysis
@@ -153,9 +142,8 @@ Techniques
 * Machine Learning
 * Model Evaluation
 
-⸻
 
-Repository Structure
+# Repository Structure
 
 rome-airbnb-price-prediction/
 ├── data/
@@ -172,9 +160,8 @@ rome-airbnb-price-prediction/
 ├── LICENSE
 └── .gitignore
 
-⸻
 
-Project Preview
+# Project Preview
 
 
 ### Average Airbnb Price by Neighborhood
@@ -219,19 +206,19 @@ Residual diagnostic plots were used to evaluate the regression model assumptions
   <img src="pricing_files/figure-html/residual-diagnostics.png" width="850">
 </p>
 
-⸻
 
-How to Run
 
-Clone the repository
+# How to Run
 
-git clone https://github.com/murziankovamaria-dotcom/rome-airbnb-price-prediction.git
+1. Clone the repository
 
-Open the project in RStudio.
+2. git clone https://github.com/murziankovamaria-dotcom/rome-airbnb-price-prediction.git
 
-Install the required packages.
+3. Open the project in RStudio.
 
-install.packages(c(
+4. Install the required packages.
+
+5. install.packages(c(
   "tidyverse",
   "caret",
   "randomForest",
@@ -240,12 +227,10 @@ install.packages(c(
   "ggplot2"
 ))
 
-Run the R Markdown file to reproduce the complete analysis.
+6. Run the R Markdown file to reproduce the complete analysis.
 
-⸻
 
-Skills Demonstrated
-
+# Skills Demonstrated
 * Data Cleaning
 * Exploratory Data Analysis (EDA)
 * Statistical Analysis
@@ -256,13 +241,10 @@ Skills Demonstrated
 * Model Evaluation
 * Business Insight Generation
 
-⸻
 
 # Author
-
 **Maria Murziankova**
 Economics & Finance Student | Data Analytics | Business Intelligence
-
 
 ## Connect with Me
 [![GitHub](https://img.shields.io/badge/GitHub-murziankovamaria--dotcom-181717?style=for-the-badge&logo=github)](https://github.com/murziankovamaria-dotcom)
