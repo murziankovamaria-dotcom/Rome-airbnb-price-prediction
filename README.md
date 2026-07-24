@@ -27,6 +27,7 @@ By understanding which variables drive pricing, hosts can make more informed pri
 # Dataset
 
 The project uses a real-world Airbnb dataset containing information about listings in Rome.
+(https://insideairbnb.com/it/get-the-data/?utm_source=chatgpt.com)
 
 The dataset includes variables such as:
 
