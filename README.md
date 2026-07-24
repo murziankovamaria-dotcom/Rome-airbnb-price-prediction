@@ -220,7 +220,7 @@ The Random Forest model identified accommodation size, location, and room charac
 
 ### Residual Diagnostics
 
-<img src="assets/figures/residual_diagnostics.png" width="700">
+<img src="assets/figures/residual-diagnostics.png" width="700">
 
 Residual diagnostics indicate that prediction errors are centered around zero with no major systematic patterns, suggesting the model provides a reasonable fit to the data.
 
