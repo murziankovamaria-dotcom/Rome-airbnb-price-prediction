@@ -158,7 +158,7 @@ This demonstrates the effectiveness of ensemble learning techniques for real est
 
 
 # Repository Structure
-
+```text
 rome-airbnb-price-prediction/
 ├── data/
 │   ├── raw/
@@ -173,9 +173,7 @@ rome-airbnb-price-prediction/
 ├── README.md
 ├── LICENSE
 └── .gitignore
-
-
-
+```
 
 
 # ## Exploratory Data Analysis
