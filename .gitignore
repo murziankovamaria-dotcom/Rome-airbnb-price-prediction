@@ -1,0 +1,23 @@
+# macOS
+.DS_Store
+
+# R
+.Rhistory
+.RData
+.Ruserdata
+
+# RStudio
+.Rproj.user/
+
+# VS Code
+.vscode/
+
+# Temporary files
+*.log
+*.tmp
+
+# Quarto
+.quarto/
+
+# HTML cache
+*_cache/
