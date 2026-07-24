@@ -43,9 +43,10 @@ The dataset includes variables such as:
 * Amenities
 
 
-# Project Workflow
+## Project Workflow
 
-Raw Airbnb Data
+```text
+Data Collection
         │
         ▼
 Data Cleaning
@@ -57,16 +58,13 @@ Exploratory Data Analysis
 Feature Engineering
         │
         ▼
-Statistical Analysis
-        │
-        ▼
-Machine Learning Models
+Machine Learning
         │
         ▼
 Model Evaluation
         │
         ▼
-Business Insights
+Final Report
 
 
 # Exploratory Data Analysis
@@ -93,6 +91,20 @@ LASSO Regression	Feature selection
 Regression Tree	Non-linear relationships
 Random Forest	Ensemble learning
 
+## Model Performance Comparison
+
+The predictive performance of each model was evaluated on the test dataset using Root Mean Squared Error (RMSE), where lower values indicate better predictive accuracy.
+
+| Model | RMSE ↓ |
+|:----------------------------|------:|
+| Multiple Linear Regression  | 0.481 |
+| Regression Tree             | 0.502 |
+| **Random Forest**           | **0.465** |
+
+**Random Forest achieved the lowest prediction error (RMSE = 0.465)**, outperforming both Multiple Linear Regression and Regression Tree. This suggests that ensemble methods better capture the nonlinear relationships present in Airbnb listing prices.
+
+**Random Forest achieved the best predictive performance**, capturing the nonlinear relationships between listing characteristics and nightly prices while reducing prediction error compared with simpler regression models.
+
 Models were evaluated using:
 
 * RMSE
@@ -107,15 +119,17 @@ The comparison showed that Random Forest achieved the strongest predictive perfo
 This demonstrates the effectiveness of ensemble learning techniques for real estate price prediction problems.
 
 
-# Key Insights
+## Key Findings
 
-Some important findings include:
+- **Location is one of the strongest drivers of Airbnb prices.** Listings in central and highly desirable neighborhoods command substantially higher nightly rates than those located farther from the city center.
 
-* Location is one of the strongest determinants of price.
-* Entire homes command significantly higher prices than private rooms.
-* Larger properties generally have higher nightly rates.
-* Listing characteristics and amenities substantially influence pricing.
-* Ensemble machine learning models outperform simple linear approaches.
+- **Room type has a significant impact on price.** Entire homes and apartments are consistently more expensive than private or shared rooms.
+
+- **Log-transforming the target variable improved model performance.** The transformation reduced the strong right skew in listing prices, making the data more suitable for regression models.
+
+- **Random Forest achieved the best predictive performance.** Compared with Multiple Linear Regression and Regression Tree models, Random Forest produced the lowest prediction error.
+
+- **Property characteristics are the most influential predictors.** Features such as accommodation size, location, and room characteristics contributed more to price prediction than many secondary listing attributes.
 
 
 
@@ -161,76 +175,57 @@ rome-airbnb-price-prediction/
 └── .gitignore
 
 
-# Project Preview
 
 
-### Average Airbnb Price by Neighborhood
 
-Average nightly Airbnb prices vary considerably across Rome's neighborhoods. Historic and central districts command the highest prices, reflecting stronger tourist demand and premium locations.
+# ## Exploratory Data Analysis
 
-<p align="center">
-  <img src="pricing_files/figure-html/neighborhood_prices.png" width="850">
-</p>
+Before building machine learning models, exploratory data analysis (EDA) was performed to understand the structure of the dataset and identify key patterns influencing Airbnb prices.
 
+### Average Price by Neighborhood
+
+<img src="assets/figures/neighborhood_prices.png" width="850">
+
+This visualization highlights substantial differences in average listing prices across Rome's neighborhoods, suggesting that location is one of the strongest determinants of Airbnb prices.
+
+---
 
 ### Distribution of Log-Transformed Prices
 
-The original price distribution is highly right-skewed. Applying a logarithmic transformation produces a more symmetric distribution, making the data better suited for regression modeling.
+<img src="assets/figures/log_price_distribution.png" width="700">
 
-<p align="center">
-  <img src="pricing_files/figure-html/log_price_distribution.png" width="700">
-</p>
+The target variable was log-transformed to reduce right skewness and better satisfy the assumptions of regression models.
 
+---
 
-### Room Type vs Log-Transformed Nightly Price
+### Room Type vs Log Price
 
-Entire homes consistently achieve the highest nightly prices, while shared rooms represent the lowest-priced segment. Displaying log-transformed prices reduces the influence of extreme outliers and highlights differences between room types more clearly.
+<img src="assets/figures/room_type_log_prices.png" width="700">
 
-<p align="center">
-  <img src="pricing_files/figure-html/room_type_log_prices.png" width="850">
-</p>
+Entire homes command significantly higher prices than private or shared rooms, indicating that room type is an important predictor of listing price.
 
-### Random Forest Feature Importance
+---
 
-The Random Forest model ranks predictors according to their contribution to predicting Airbnb listing prices. Neighbourhood and room type emerge as the most influential features, followed by booking activity and host characteristics.
+## Machine Learning Results
 
-<p align="center">
-  <img src="pricing_files/figure-html/feature_importance.png" width="700">
-</p>
+Several regression models were trained to predict Airbnb listing prices. Random Forest achieved the best predictive performance.
+
+### Feature Importance
+
+<img src="assets/figures/feature_importance.png" width="800">
+
+The Random Forest model identified accommodation size, location, and room characteristics as the most influential predictors of price.
+
+---
 
 ### Residual Diagnostics
 
-Residual diagnostic plots were used to evaluate the regression model assumptions and identify potential outliers, influential observations, and patterns in prediction errors.
+<img src="assets/figures/residual_diagnostics.png" width="700">
 
-<p align="center">
-  <img src="pricing_files/figure-html/residual-diagnostics.png" width="850">
-</p>
+Residual diagnostics indicate that prediction errors are centered around zero with no major systematic patterns, suggesting the model provides a reasonable fit to the data.
 
 
-
-# How to Run
-
-1. Clone the repository
-
-2. git clone https://github.com/murziankovamaria-dotcom/rome-airbnb-price-prediction.git
-
-3. Open the project in RStudio.
-
-4. Install the required packages.
-
-5. install.packages(c(
-  "tidyverse",
-  "caret",
-  "randomForest",
-  "glmnet",
-  "rpart",
-  "ggplot2"
-))
-
-6. Run the R Markdown file to reproduce the complete analysis.
-
-
-# Skills Demonstrated
+## Skills Demonstrated
 * Data Cleaning
 * Exploratory Data Analysis (EDA)
 * Statistical Analysis
