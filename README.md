@@ -180,7 +180,6 @@ Residual diagnostics indicate that prediction errors are centered around zero wi
 
 # Author
 **Maria Murziankova**
-Economics & Finance Student | Data Analytics | Business Intelligence
 
 ## Connect with Me
 [![GitHub](https://img.shields.io/badge/GitHub-murziankovamaria--dotcom-181717?style=for-the-badge&logo=github)](https://github.com/murziankovamaria-dotcom)
