@@ -1,15 +1,13 @@
 # Rome Airbnb Price Prediction
 
-End-to-end Data Science project using R and Machine Learning to predict Airbnb listing prices in Rome and uncover the key factors influencing short-term rental pricing.
+Data analysis project in R that explores Airbnb listing prices in Rome and compares a linear regression, a regression tree, and a random forest for predicting the nightly price.
 
 
 # Project Overview
 
-Pricing an Airbnb property is a complex decision influenced by location, property characteristics, host information, guest demand, and market conditions.
-
-The objective of this project is to analyze Airbnb listings in Rome, Italy, identify the factors that most strongly affect nightly prices, and build predictive machine learning models capable of estimating listing prices with high accuracy.
-
-The project follows a complete data science workflow, from data preprocessing and exploratory analysis to model development and business recommendations.
+Setting a nightly price is a trade-off: too high and demand falls, too low and revenue is lost. This project uses the Inside Airbnb data for Rome to answer two questions:
+        Which listing characteristics have the greatest influence on nightly prices?
+        How accurately can statistical and machine learning models predict the price?
 
 
 # Business Problem
@@ -26,23 +24,10 @@ By understanding which variables drive pricing, hosts can make more informed pri
 
 # Dataset
 
-The project uses a real-world Airbnb dataset containing information about listings in Rome.
-(https://insideairbnb.com/it/get-the-data/)
-
-The dataset includes variables such as:
-
-* Nightly price
-* Neighborhood
-* Property type
-* Bedrooms
-* Bathrooms
-* Guest capacity
-* Reviews
-* Host characteristics
-* Availability
-* Room type
-* Amenities
-
+Source: Inside Airbnb, Rome
+Size: 37,228 listings, 19 columns.
+Target: nightly price in euros, transformed with the natural log (log())
+Predictors (7): room type, neighbourhood, minimum nights, number of reviews, reviews per month, availability (days per year), host listing count
 
 ## Project Workflow
 
@@ -67,95 +52,56 @@ Model Evaluation
         ▼
 Final Report
 
+Data inspection and cleaning (missing values, empty neighbourhood_group removed)
+Exploratory data analysis (price distribution, room type, neighbourhood, correlations)
+Log transformation of price
+Linear regression (three specifications) for interpretation
+Model comparison on a held-out test set: linear regression, regression tree, random forest
+Interpretation and business recommendations
 
-# Exploratory Data Analysis
-
-The analysis investigates:
-
-* Distribution of listing prices
-* Missing values
-* Outliers
-* Correlation between variables
-* Neighborhood pricing differences
-* Property type comparisons
-* Relationships between amenities and prices
-
-
-# Machine Learning Models
-
+# Models and Evaluation
 Several regression models were trained and compared.
 
 Model	Purpose
 Linear Regression	Baseline model
-Ridge Regression	Regularized regression
-LASSO Regression	Feature selection
 Regression Tree	Non-linear relationships
 Random Forest	Ensemble learning
 
 ## Model Performance Comparison
-
-The predictive performance of each model was evaluated on the test dataset using Root Mean Squared Error (RMSE), where lower values indicate better predictive accuracy.
+The data were split at random into 80% training and 20% test (set.seed(123)); all models use the same split. No cross-validation or hyperparameter tuning was applied.
 
 | Model | RMSE ↓ |
 |:----------------------------|------:|
 | Multiple Linear Regression  | 0.481 |
 | Regression Tree             | 0.502 |
-| **Random Forest**           | **0.465** |
+| **Random Forest(300 tress)**           | **0.465** |
 
 **Random Forest achieved the lowest prediction error (RMSE = 0.465)**, outperforming both Multiple Linear Regression and Regression Tree. This suggests that ensemble methods better capture the nonlinear relationships present in Airbnb listing prices.
 
 **Random Forest achieved the best predictive performance**, capturing the nonlinear relationships between listing characteristics and nightly prices while reducing prediction error compared with simpler regression models.
 
 Models were evaluated using:
-
-* RMSE
-* MAE
 * R² Score
 
-
-# Results
-
-The comparison showed that Random Forest achieved the strongest predictive performance, outperforming traditional linear regression models by capturing more complex relationships between Airbnb listing characteristics and pricing.
-
-This demonstrates the effectiveness of ensemble learning techniques for real estate price prediction problems.
 
 
 ## Key Findings
 
-- **Location is one of the strongest drivers of Airbnb prices.** Listings in central and highly desirable neighborhoods command substantially higher nightly rates than those located farther from the city center.
+* Neighbourhood and room type are the strongest drivers of price. In the random forest, neighbourhood ranks first and room type second. * Entire homes cost more than private or shared rooms, and the historic centre (I Centro Storico) has the highest average price.
+* Prices are right-skewed. The log transformation makes the distribution much more symmetric.
+* Numeric variables are weak individual predictors. Correlations with price are low. In the full OLS model, reviews per month and minimum nights are negatively associated with price, and the host's listing count is positively associated.
+* The random forest predicts best, which suggests nonlinear relationships that the linear model misses. The gain over the baseline is modest.
+* Residuals show mild heteroskedasticity and a heavy upper tail, driven by luxury listings
 
-- **Room type has a significant impact on price.** Entire homes and apartments are consistently more expensive than private or shared rooms.
-
-- **Log-transforming the target variable improved model performance.** The transformation reduced the strong right skew in listing prices, making the data more suitable for regression models.
-
-- **Random Forest achieved the best predictive performance.** Compared with Multiple Linear Regression and Regression Tree models, Random Forest produced the lowest prediction error.
-
-- **Property characteristics are the most influential predictors.** Features such as accommodation size, location, and room characteristics contributed more to price prediction than many secondary listing attributes.
-
-
+# Limitations
+* Cross-sectional data from one snapshot; no seasonality
+* No property size, amenities, photos, or listing text
+* Single train/test split without cross-validation or tuning
+* The linear models explain about one third of the variation in price (adjusted R² 0.354)
 
 # Technologies Used
-
-### Programming
-* R
-* R Markdown
-
-### Libraries
-* tidyverse
-* dplyr
-* ggplot2
-* caret
-* randomForest
-* glmnet
-* rpart
-
-### Techniques
-* Data Cleaning
-* Feature Engineering
-* Exploratory Data Analysis
-* Regression Modeling
-* Machine Learning
-* Model Evaluation
+* Language: R, R Markdown
+* Packages: tidyverse (dplyr, ggplot2), rpart, randomForest, knitr, kableExtra, stargazer
 
 
 # Repository Structure
@@ -225,15 +171,11 @@ Residual diagnostics indicate that prediction errors are centered around zero wi
 
 
 ## Skills Demonstrated
-* Data Cleaning
-* Exploratory Data Analysis (EDA)
-* Statistical Analysis
-* Feature Engineering
-* Machine Learning
-* Predictive Modeling
-* Data Visualization
-* Model Evaluation
-* Business Insight Generation
+* Data cleaning and exploratory data analysis
+* Linear regression and model diagnostics
+* Regression tree and random forest, evaluated on a test set
+* Data visualization with ggplot2
+* Translating results into business recommendations
 
 
 # Author
